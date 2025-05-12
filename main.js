@@ -5,7 +5,9 @@ const targets = [];
 let isPointerLocked = false;
 const roomSize = 20;
 const wallHeight = 8;
-
+let gameTime = 30; // 30 seconds
+let timerInterval;
+const timerDisplay = document.getElementById('timer');
 // Audio elements
 const shootSound = new Audio('submachine-gun-79846.mp3');
 const hitSound = new Audio('metal-hit-94-200422.mp3');
@@ -422,7 +424,7 @@ function createExplosion(position) {
     const geometry = new THREE.BufferGeometry();
     const material = new THREE.PointsMaterial({
         color: 0xff4500,
-        size: 0.2,
+        size: 0.02,
         transparent: true,
         opacity: 1
     });
@@ -502,7 +504,15 @@ function handleMovement() {
 function startGame() {
     score = 0;
     gameActive = true;
+    gameTime = 30; // Reset timer to 30 seconds
     document.getElementById('score').textContent = `Score: ${score}`;
+    timerDisplay.textContent = `Time: ${gameTime}s`;
+    
+    // Clear any existing timer
+    if (timerInterval) clearInterval(timerInterval);
+    
+    // Start new timer
+    timerInterval = setInterval(updateTimer, 1000);
     
     targets.forEach(target => scene.remove(target));
     targets.length = 0;
@@ -510,6 +520,49 @@ function startGame() {
     for (let i = 0; i < 5; i++) {
         createTarget();
     }
+}
+
+// Add this new function to update the timer
+function updateTimer() {
+    gameTime--;
+    timerDisplay.textContent = `Time: ${gameTime}s`;
+    
+    if (gameTime <= 0) {
+        endGame();
+    }
+}
+function endGame() {
+    gameActive = false;
+    clearInterval(timerInterval);
+    
+    // Display game over notification
+    const gameOverDiv = document.createElement('div');
+    gameOverDiv.id = 'game-over';
+    gameOverDiv.style.position = 'fixed';
+    gameOverDiv.style.top = '50%';
+    gameOverDiv.style.left = '50%';
+    gameOverDiv.style.transform = 'translate(-50%, -50%)';
+    gameOverDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+    gameOverDiv.style.color = 'white';
+    gameOverDiv.style.padding = '20px';
+    gameOverDiv.style.borderRadius = '10px';
+    gameOverDiv.style.textAlign = 'center';
+    gameOverDiv.style.zIndex = '1000';
+    gameOverDiv.innerHTML = `
+        <h2>Time's Up!</h2>
+        <p>Your final score: ${score}</p>
+        <button id="play-again" style="padding: 10px 20px; margin-top: 10px; cursor: pointer;">Play Again</button>
+    `;
+    
+    document.body.appendChild(gameOverDiv);
+    
+    // Add event listener for play again button
+    document.getElementById('play-again').addEventListener('click', () => {
+        document.body.removeChild(gameOverDiv);
+        controls.lock().catch(err => {
+            console.error("Pointer lock failed:", err);
+        });
+    });
 }
 
 // Game loop
